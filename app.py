@@ -230,7 +230,7 @@ if not PREPARO_ETL.empty:
         df_final['data-inicio-curso'] = PREPARO_ETL['data-inicio-curso']
         df_final['data-fim-curso'] = PREPARO_ETL['data-fim-curso']
         df_final['carga-horaria'] = carga_horaria_input
-        df_final['cnpj-entidade-crede'] = '394494000560'
+        df_final['cnpj-entidade-crede'] = '00394494000560'
         df_final['cpf-instrutor'] = '57437670097'
         df_final['municipio-curso'] = '9701'
         df_final['uf-curso'] = 'DF'
@@ -265,7 +265,7 @@ if not PREPARO_ETL.empty:
         df_final['data-inicio-curso'] = df_final['data-inicio-curso'].astype(str).str.ljust(8) # Datas já devem estar em YYYYMMDD ou vazio
         df_final['data-fim-curso'] = df_final['data-fim-curso'].astype(str).str.ljust(8) # Datas já devem estar em YYYYMMDD ou vazio
         df_final['carga-horaria'] = df_final['carga-horaria'].astype(str).str.zfill(3)
-        df_final['cnpj-entidade-crede'] = df_final['cnpj-entidade-crede'].astype(str).str.zfill(12)
+        df_final['cnpj-entidade-crede'] = df_final['cnpj-entidade-crede'].astype(str).str.zfill(14)
         df_final['cpf-instrutor'] = df_final['cpf-instrutor'].astype(str).str.zfill(11)
         df_final['municipio-curso'] = df_final['municipio-curso'].astype(str).str.zfill(5)
         df_final['uf-curso'] = df_final['uf-curso'].astype(str).str.ljust(2)
