@@ -1,43 +1,70 @@
+# app.py
+
+import streamlit as st
 import pandas as pd
-from google.colab import files
 import io
+import zipfile
 
-# 1. Solicita o upload do arquivo na tela
-uploaded = files.upload()
+# --- Configuração da Página ---
+st.set_page_config(
+    page_title="Divisor de CSV",
+    page_icon="✂️",
+    layout="centered"
+)
 
-if uploaded:
-    # Assuming only one file is uploaded, get the filename and content
-    filename = list(uploaded.keys())[0]
-    file_content = uploaded[filename]
+# --- Título e Descrição ---
+st.title("✂️ Divisor de Arquivos CSV")
+st.write(
+    "Faça o upload de um arquivo CSV e esta ferramenta o dividirá em múltiplos arquivos "
+    "menores, com no máximo 500 linhas cada."
+)
 
-    # Use io.StringIO to wrap the byte string
-    csv_file = io.StringIO(file_content.decode('utf-8'))
+# --- Lógica de Upload ---
+uploaded_file = st.file_uploader(
+    "Escolha um arquivo CSV",
+    type="csv",
+    help="O arquivo será processado e dividido em partes menores."
+)
 
-    # 2. Lê o documento e divide em novos arquivos em csv com até 500 registros
-    # Lê o CSV para um pandas DataFrame, tratando todas as colunas como strings
-    df = pd.read_csv(csv_file, dtype=str)
+if uploaded_file is not None:
+    try:
+        # Lê o arquivo CSV garantindo que todas as colunas sejam tratadas como texto (string)
+        df = pd.read_csv(uploaded_file, dtype=str)
 
-    if not df.empty:
-        row_count = df.shape[0]
-        chunk_size = 500
-        num_chunks = (row_count + chunk_size - 1) // chunk_size
-        dfs = []
-        for i in range(num_chunks):
-            start_row = i * chunk_size
-            end_row = min((i + 1) * chunk_size, row_count)
-            dfs.append(df.iloc[start_row:end_row])
+        if df.empty:
+            st.warning("⚠️ O arquivo CSV está vazio. Por favor, carregue um arquivo com dados.")
+        else:
+            st.success(f"Arquivo '{uploaded_file.name}' carregado com sucesso! Ele contém **{len(df)}** linhas.")
 
-        # 3. Salva e baixa os novos arquivos divididos com o mesmo cabeçalho
-        print("Gerando e baixando arquivos divididos:")
-        for i, smaller_df in enumerate(dfs):
-            output_filename = f"output_part_{i + 1}.csv"
-            smaller_df.to_csv(output_filename, index=False)
-            print(f"Arquivo '{output_filename}' gerado.")
-            # Baixar o arquivo automaticamente
-            files.download(output_filename)
+            # --- Lógica de Divisão ---
+            chunk_size = 500
+            list_of_dfs = [df.iloc[i:i + chunk_size] for i in range(0, len(df), chunk_size)]
 
-    else:
-        print("O arquivo CSV está vazio.")
+            # Prepara o nome base para os arquivos de saída
+            original_filename = uploaded_file.name.replace('.csv', '')
 
-else:
-    print("Nenhum arquivo foi carregado.")
+            # --- Lógica para criar o ZIP em memória ---
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                for i, chunk_df in enumerate(list_of_dfs):
+                    # Cria o nome do arquivo individual
+                    output_filename = f"{original_filename}_parte_{i + 1}.csv"
+                    # Converte o dataframe para CSV em formato de string
+                    csv_data = chunk_df.to_csv(index=False).encode('utf-8')
+                    # Adiciona o arquivo CSV ao zip
+                    zip_file.writestr(output_filename, csv_data)
+            
+            # Posiciona o buffer no início para a leitura
+            zip_buffer.seek(0)
+
+            # --- Botão de Download ---
+            st.download_button(
+                label=f"📥 Baixar Arquivos Divididos ({len(list_of_dfs)} partes) em .zip",
+                data=zip_buffer,
+                file_name=f'{original_filename}_dividido.zip',
+                mime='application/zip',
+                use_container_width=True
+            )
+
+    except Exception as e:
+        st.error(f"Ocorreu um erro ao processar o arquivo: {e}")
